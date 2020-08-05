@@ -97,13 +97,13 @@ class RainSoundPlayer {
     this.playbackStatus = 'started';
     this.stopPlaybackTime = Date.now() + minutesToMilliseconds(minutes);
     this.adjustRefreshTime(minutes);
-    if (this.wakeLock) {wakelock.lock()};
+    if (this.wakeLock) {this.wakelock.lock()};
     this.refreshTimeout = setTimeout(() => {this.refresh()}, this.refreshInterval);
   };
   stopPlayback() {
     this.audio.volume = 0;
     this.playbackStatus = 'stopped';
-    if (this.wakeLock) {wakelock.unlock()};
+    if (this.wakeLock) {this.wakelock.unlock()};
     setTimeout(()=>{this.blockPlayback()}, minutesToMilliseconds(15));
   };
   restartTimer() {
