@@ -89,7 +89,7 @@ class RainSoundPlayer {
     this.playBtn.addEventListener('touchend', ()=>{this.btnReleased()});
     this.playBtn.addEventListener('mouseup', ()=>{this.btnReleased()});
     if ('DeviceOrientationEvent' in window) {
-      new CallFunctionOnDeviceRotate(this.run, 'rotation', this, 80);
+      new CallFunctionOnDeviceRotate(this.run, 'rotation', this, 120);
     };
     if ('wakeLock' in navigator) {
       this.wakelockInstance = new WakelockInterface();
@@ -165,6 +165,7 @@ class RainSoundPlayer {
     this.longPressTimeout = setTimeout(()=>{
       this.isLongPress = true;
       this.stopPlayback();
+      this.blockPlayback();
     }, 2000);
   };
   btnReleased() {
