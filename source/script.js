@@ -55,16 +55,16 @@ class CallFunctionOnDeviceRotate {
   }
 };
 
-class Wakelock {
+class WakelockInterface {
   constructor() {
     this.state = 'unlocked';
-    this.wakelock = null;
+    this.wakelockObj = null;
     this.container = document.querySelector('html');
   };
   async lock() {
     try {
       if (this.state !== 'unlocked') {return};
-      this.wakelock = await navigator.wakelock.request('screen');
+      this.wakelockObj = await navigator.wakeLock.request('screen');
       this.state = 'locked';
       this.container.classList.add('powersave');
     } catch(error) {
@@ -73,7 +73,7 @@ class Wakelock {
   };
   unlock() {
     if (this.state !== 'locked') {return};
-    this.wakelock.release();
+    this.wakelockObj.release();
     this.state = 'unlocked';
     this.container.classList.remove('powersave');
   };
@@ -89,7 +89,7 @@ class RainSoundPlayer {
       new CallFunctionOnDeviceRotate(this.run, 'rotation', this, 80);
     };
     if ('wakeLock' in navigator) {
-      this.wakelock = new Wakelock();
+      this.wakelockInstance = new WakelockInterface();
     }
   };
   startPlayback(minutes) {
@@ -97,13 +97,13 @@ class RainSoundPlayer {
     this.playbackStatus = 'started';
     this.stopPlaybackTime = Date.now() + minutesToMilliseconds(minutes);
     this.adjustRefreshTime(minutes);
-    if (this.wakelock) {this.wakelock.lock()};
+    if (this.wakelockInstance) {this.wakelockInstance.lock()};
     this.refreshTimeout = setTimeout(() => {this.refresh()}, this.refreshInterval);
   };
   stopPlayback() {
     this.audio.volume = 0;
     this.playbackStatus = 'stopped';
-    if (this.wakelock) {this.wakelock.unlock()};
+    if (this.wakelockInstance) {this.wakelockInstance.unlock()};
     setTimeout(()=>{this.blockPlayback()}, minutesToMilliseconds(15));
   };
   restartTimer() {
