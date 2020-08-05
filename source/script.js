@@ -68,7 +68,7 @@ class Wakelock {
       this.state = 'locked';
       this.container.classList.add('powersave');
     } catch(error) {
-      console.error(`${err.name}, ${err.message}`);
+      console.error(`${error.name}, ${error.message}`);
     };
   };
   unlock() {
