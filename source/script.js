@@ -55,14 +55,41 @@ class CallFunctionOnDeviceRotate {
   }
 };
 
+class Wakelock {
+  constructor() {
+    this.state = 'unlocked';
+    this.wakelock = null;
+    this.container = document.querySelector('html');
+  };
+  async lock() {
+    try {
+      if (this.state !== 'unlocked') {return};
+      this.wakelock = await navigator.wakeLock.request('screen');
+      this.state = 'locked';
+      this.container.classList.add('powersave');
+    } catch(error) {
+      console.error(`${err.name}, ${err.message}`);
+    };
+  };
+  unlock() {
+    if (this.state !== 'locked') {return};
+    this.wakelock.release();
+    this.state = 'unlocked';
+    this.container.classList.remove('powersave');
+  };
+}
+
 class RainSoundPlayer {
   constructor() {
     this.audio = document.querySelector('#rainAudio');
     this.audio.volume = 0;
     this.playBtn = document.querySelector('#playBtn');
     this.playBtn.addEventListener('click', ()=>{this.run('btn')});
-    if (window.DeviceOrientationEvent) {
-      new CallFunctionOnDeviceRotate(this.run, 'rotation', this, 60);
+    if ('DeviceOrientationEvent' in window) {
+      new CallFunctionOnDeviceRotate(this.run, 'rotation', this, 80);
+    };
+    if ('wakeLock' in navigator) {
+      this.wakeLock = new Wakelock();
     }
   };
   startPlayback(minutes) {
@@ -70,11 +97,13 @@ class RainSoundPlayer {
     this.playbackStatus = 'started';
     this.stopPlaybackTime = Date.now() + minutesToMilliseconds(minutes);
     this.adjustRefreshTime(minutes);
+    if (this.wakeLock) {wakelock.lock()};
     this.refreshTimeout = setTimeout(() => {this.refresh()}, this.refreshInterval);
   };
   stopPlayback() {
     this.audio.volume = 0;
     this.playbackStatus = 'stopped';
+    if (this.wakeLock) {wakelock.unlock()};
     setTimeout(()=>{this.blockPlayback()}, minutesToMilliseconds(15));
   };
   restartTimer() {
@@ -85,9 +114,10 @@ class RainSoundPlayer {
   };
   refresh() {
     const timeUntilPause = (this.stopPlaybackTime - Date.now()) / minutesToMilliseconds(1);
-    if (timeUntilPause <= 3) {this.gradualVolumeChange('fadeOut')};
+    if (timeUntilPause <= 3 || !this.volumeChangeTimeout) {this.gradualVolumeChange('fadeOut')};
     if (timeUntilPause <= 0) {this.stopPlayback(); return};
     this.adjustRefreshTime(timeUntilPause);
+    clearTimeout(this.refreshTimeout);
     this.refreshTimeout = setTimeout(() => {this.refresh()}, this.refreshInterval);
   };
   adjustRefreshTime(minutesUntilPause) {

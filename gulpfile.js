@@ -1,5 +1,6 @@
 const gulp = require("gulp");
 const htmlmin = require("gulp-htmlmin");
+const minifyInline = require('gulp-minify-inline');
 const del = require("del");
 const terser = require("gulp-terser");
 const header = require("gulp-header");
@@ -7,6 +8,7 @@ const compilationTime = new Date();
 
 const html = () => {
   return gulp.src("source/index.html")
+  .pipe(minifyInline())
   .pipe(htmlmin({ collapseWhitespace: true }))
   .pipe(gulp.dest("build"));
 };
