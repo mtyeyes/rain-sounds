@@ -8,49 +8,52 @@ if ('serviceWorker' in navigator) {
 };
 
 const minutesToMilliseconds = (minutes) => {
-  return minutes * 60000;
+  return minutes * 60000
 };
 
-// class CallFunctionOnShake {
-//   constructor(functionRef, functionArguments, context, timeframe, threshold) {
-//     this.deviceMoveHistory = [];
-//     this.threshold = threshold;
-//     this.timeframe = timeframe;
-//     this.functionToCall = functionRef;
-//     this.functionContext = context;
-//     this.functionArgumets = functionArguments;
-//     window.addEventListener('devicemotion', (e) => {
-//       this.ifShakeCallFunction(e);
-//     });
-//   };
-//   ifShakeCallFunction(e) {
-//     this.updateHistory(e);
-//     if(this.checkIfShake(e)) {this.invokeFunction()};
-//   };
-//   invokeFunction() {
-//     this.functionToCall.apply(this.functionContext, this.functionArgumets);
-//   };
-//   checkIfShake(e) {
-//     if (this.deviceMoveHistory.length < 2) {return};
-//     const findDelta = (axis, i = 0) => {
-//       let currentCoordinates = this.deviceMoveHistory[i];
-//       let previousCoordinates = this.deviceMoveHistory[i+1]
-//       if(i > (this.deviceMoveHistory.length - 2) || Date.now() > (previousCoordinates.timeOfMove + this.timeframe)) {return 0};
-//       return Math.abs(currentCoordinates[axis] - previousCoordinates[axis]) + findDelta(axis, i+1);
-//     };
-//     if (findDelta('x') > this.threshold || findDelta('y') > this.threshold || findDelta('z') > this.threshold) {
-//       this.invokeFunction();
-//     };
-//   };
-//   updateHistory(e) {
-//     const x = e.accelerationIncludingGravity.x;
-//     const y = e.accelerationIncludingGravity.y;
-//     const z = e.accelerationIncludingGravity.z;
-//     const timeOfMove = Date.now();
-//     if (this.deviceMoveHistory.length === 4) {this.deviceMoveHistory.pop()};
-//     this.deviceMoveHistory.unshift({x,y,z,timeOfMove});
-//   };
-// };
+class CallFunctionOnDeviceRotate {
+  constructor(functionRef, functionArguments, context, threshold) {
+    this.previousOrientation = undefined;
+    this.rotateCounter = 0;
+    this.threshold = threshold;
+    this.functionToCall = functionRef;
+    this.functionContext = context;
+    this.functionArgumets = (typeof functionArguments === 'string') ? [functionArguments] : functionArguments;
+    window.addEventListener('deviceorientation', (e) => {
+      this.ifRotatedCallFunction(e);
+    });
+  };
+  ifRotatedCallFunction(e) {
+    if(this.checkIfRotated(e.alpha)) {this.invokeFunction()};
+  };
+  invokeFunction() {
+    this.functionToCall.apply(this.functionContext, this.functionArgumets);
+  };
+  checkIfRotated(currentOrientation) {
+    if (!this.previousOrientation || this.isUnderRotated(currentOrientation)) {
+      this.updatePreviousOrientation(currentOrientation);
+      return false
+    };
+    this.rotateCounter++;
+    this.updatePreviousOrientation(currentOrientation);
+    if (this.rotateCounter >= 2) {
+      this.rotateCounter = 0;
+      return true
+    } else {
+      return false
+    };
+  };
+  updatePreviousOrientation(degrees) {
+    this.previousOrientation = degrees;
+  };
+  isUnderRotated(newOrientation) {
+    if (Math.abs(this.previousOrientation - newOrientation) <= this.threshold) {
+      return true
+    } else {
+      return false
+    }
+  }
+};
 
 class RainSoundPlayer {
   constructor() {
@@ -58,17 +61,21 @@ class RainSoundPlayer {
     this.audio.volume = 0;
     this.playBtn = document.querySelector('#playBtn');
     this.playBtn.addEventListener('click', ()=>{this.run('btn')});
+    if (window.DeviceOrientationEvent) {
+      new CallFunctionOnDeviceRotate(this.run, 'rotation', this, 60);
+    }
   };
   startPlayback(minutes) {
-    this.playbackStatus = 'started';
     this.gradualVolumeChange('fadeIn');
+    this.playbackStatus = 'started';
     this.stopPlaybackTime = Date.now() + minutesToMilliseconds(minutes);
     this.adjustRefreshTime(minutes);
     this.refreshTimeout = setTimeout(() => {this.refresh()}, this.refreshInterval);
   };
   stopPlayback() {
     this.audio.volume = 0;
-    setTimeout(()=>{this.blockPlayback()}, minutesToMilliseconds(10));
+    this.playbackStatus = 'stopped';
+    setTimeout(()=>{this.blockPlayback()}, minutesToMilliseconds(15));
   };
   restartTimer() {
     this.stopPlaybackTime = Date.now() + minutesToMilliseconds(15);
@@ -77,7 +84,6 @@ class RainSoundPlayer {
     this.refreshTimeout = setTimeout(() => {this.refresh()}, this.refreshInterval);
   };
   refresh() {
-    console.log(this.audio.volume);
     const timeUntilPause = (this.stopPlaybackTime - Date.now()) / minutesToMilliseconds(1);
     if (timeUntilPause <= 3) {this.gradualVolumeChange('fadeOut')};
     if (timeUntilPause <= 0) {this.stopPlayback(); return};
@@ -102,6 +108,7 @@ class RainSoundPlayer {
   };
   blockPlayback() {
     if (this.playbackStatus !== 'stopped') {return};
+    this.playBtn.classList.add('push-to-unlock');
     this.playbackStatus = 'blocked';
   };
   run(inputMethod) {
@@ -110,10 +117,12 @@ class RainSoundPlayer {
         this.restartTimer();
         break;
       case 'blocked':
-        if (inputMethod === 'btn') {this.startPlayback(30)};
+        if (inputMethod === 'btn') {
+          this.playBtn.classList.remove('push-to-unlock');
+          this.startPlayback(15)};
         break;
       default:
-        this.startPlayback(30);
+        this.startPlayback(15);
     };
   };
 };
