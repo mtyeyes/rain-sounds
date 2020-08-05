@@ -64,7 +64,7 @@ class Wakelock {
   async lock() {
     try {
       if (this.state !== 'unlocked') {return};
-      this.wakelock = await navigator.wakeLock.request('screen');
+      this.wakelock = await navigator.wakelock.request('screen');
       this.state = 'locked';
       this.container.classList.add('powersave');
     } catch(error) {
@@ -89,7 +89,7 @@ class RainSoundPlayer {
       new CallFunctionOnDeviceRotate(this.run, 'rotation', this, 80);
     };
     if ('wakeLock' in navigator) {
-      this.wakeLock = new Wakelock();
+      this.wakelock = new Wakelock();
     }
   };
   startPlayback(minutes) {
@@ -97,13 +97,13 @@ class RainSoundPlayer {
     this.playbackStatus = 'started';
     this.stopPlaybackTime = Date.now() + minutesToMilliseconds(minutes);
     this.adjustRefreshTime(minutes);
-    if (this.wakeLock) {this.wakelock.lock()};
+    if (this.wakelock) {this.wakelock.lock()};
     this.refreshTimeout = setTimeout(() => {this.refresh()}, this.refreshInterval);
   };
   stopPlayback() {
     this.audio.volume = 0;
     this.playbackStatus = 'stopped';
-    if (this.wakeLock) {this.wakelock.unlock()};
+    if (this.wakelock) {this.wakelock.unlock()};
     setTimeout(()=>{this.blockPlayback()}, minutesToMilliseconds(15));
   };
   restartTimer() {
