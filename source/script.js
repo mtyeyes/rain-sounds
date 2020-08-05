@@ -84,7 +84,10 @@ class RainSoundPlayer {
     this.audio = document.querySelector('#rainAudio');
     this.audio.volume = 0;
     this.playBtn = document.querySelector('#playBtn');
-    this.playBtn.addEventListener('click', ()=>{this.run('btn')});
+    this.playBtn.addEventListener('touchstart', ()=>{this.btnPressed()});
+    this.playBtn.addEventListener('mousedown', ()=>{this.btnPressed()});
+    this.playBtn.addEventListener('touchend', ()=>{this.btnReleased()});
+    this.playBtn.addEventListener('mouseup', ()=>{this.btnReleased()});
     if ('DeviceOrientationEvent' in window) {
       new CallFunctionOnDeviceRotate(this.run, 'rotation', this, 80);
     };
@@ -104,6 +107,8 @@ class RainSoundPlayer {
     this.audio.volume = 0;
     this.playbackStatus = 'stopped';
     if (this.wakelockInstance) {this.wakelockInstance.unlock()};
+    clearTimeout(this.refreshTimeout);
+    clearTimeout(this.volumeChangeTimeout);
     setTimeout(()=>{this.blockPlayback()}, minutesToMilliseconds(15));
   };
   restartTimer() {
@@ -154,6 +159,17 @@ class RainSoundPlayer {
       default:
         this.startPlayback(15);
     };
+  };
+  btnPressed() {
+    this.isLongPress = false;
+    this.longPressTimeout = setTimeout(()=>{
+      this.isLongPress = true;
+      this.stopPlayback();
+    }, 2000);
+  };
+  btnReleased() {
+    clearTimeout(this.longPressTimeout);
+    if (!this.isLongPress) {this.run('btn')};
   };
 };
 
